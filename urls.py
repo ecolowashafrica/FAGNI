@@ -1,14 +1,13 @@
 
-from django.urls import path
-from . import views
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
-    path("clients/", views.clients),
-    path("orders/", views.orders),
-    path("orders/<int:pk>/status/", views.order_status),
-    path("orders/<int:pk>/assign/", views.order_assign),
-    path("orders/<int:pk>/schedule/", views.order_schedule),
-    path("partners/", views.partners),
-    path("payments/", views.payments),
-    path("incidents/", views.incidents),
+    path("admin/", admin.site.urls),
+    path("api/", include("api.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
