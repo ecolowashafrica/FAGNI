@@ -1,5 +1,10 @@
-from rest_framework.routers import DefaultRouter
-from .views import OrdersViewSet
-router = DefaultRouter()
-router.register(r'', OrdersViewSet, basename='orders')
-urlpatterns = router.urls
+from django.urls import path
+from django.http import JsonResponse
+from django.utils.timezone import now
+
+def health(request):
+    return JsonResponse({'ok': True, 'time': now().isoformat()})
+
+urlpatterns = [
+    path('api/health/', health),
+]
