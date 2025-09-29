@@ -36,7 +36,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "fagni_backend.urls"
+ROOT_URLCONF = "FAGNI.urls"
 
 TEMPLATES = [
     {
@@ -54,7 +54,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "fagni_backend.wsgi.application"
+WSGI_APPLICATION = "FAGNI.wsgi.application"
 
 # --- Base de données ---
 # Local par défaut (SQLite). En prod, configure Postgres via variables d'env.
