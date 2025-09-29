@@ -1,1 +1,1 @@
-web: gunicorn fagni_backend.wsgi:application --bind 0.0.0.0:$PORT
+web: gunicorn FAGNI.wsgi:application --bind 0.0.0.0:$PORT
