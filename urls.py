@@ -10,13 +10,7 @@ NEXT_ID = {"order": 1, "client": 1, "partner": 1, "payment": 1, "incident": 1}
 
 # ===== Workflow des commandes =====
 ORDER_STATUSES = [
-    "PENDING_PAYMENT",
-    "PAID",
-    "COLLECTING",
-    "PROCESSING",
-    "READY",
-    "DELIVERING",
-    "DELIVERED",
+    "PENDING_PAYMENT", "PAID", "COLLECTING", "PROCESSING", "READY", "DELIVERING", "DELIVERED",
 ]
 NEXT_STATUS = {
     "PENDING_PAYMENT": "PAID",
@@ -77,20 +71,24 @@ def make_list_handler(store_key, store, defaults=None):
             if defaults:
                 for k, v in defaults.items():
                     payload.setdefault(k, v)
+            # Spécifique aux commandes : statut initial + historique
+            if store_key == "order":
+                payload.setdefault("status", "PENDING_PAYMENT")
+                payload["history"] = payload.get("history", [])
+                payload["history"].append({"status": payload["status"], "at": now().isoformat()})
             store.append(payload)
             return add_cors(JsonResponse({"ok": True, "data": payload}, status=201))
 
         return add_cors(JsonResponse({"error": "Method not allowed"}, status=405))
     return handler
 
-# Endpoints "liste"
 orders = make_list_handler("order", ORDERS, defaults={"status": "PENDING_PAYMENT"})
 clients = make_list_handler("client", CLIENTS)
 partners = make_list_handler("partner", PARTNERS)
 payments = make_list_handler("payment", PAYMENTS)
 incidents = make_list_handler("incident", INCIDENTS)
 
-# ===== Changement de statut d'une commande =====
+# ===== Changement de statut d'une commande (avec historique) =====
 @csrf_exempt
 def order_status(request, oid: int):
     if request.method == "OPTIONS":
@@ -103,12 +101,12 @@ def order_status(request, oid: int):
         return add_cors(JsonResponse({"error": f"Order {oid} not found"}, status=404))
 
     payload = parse_json(request) or {}
-    # 2 modes : action=next OU status="READY" (par ex)
     if payload.get("action") == "next":
         current = order["status"]
         if current not in NEXT_STATUS:
             return add_cors(JsonResponse({"error": f"No next status from {current}"}, status=400))
         order["status"] = NEXT_STATUS[current]
+        order.setdefault("history", []).append({"status": order["status"], "at": now().isoformat()})
         order["status_changed_at"] = now().isoformat()
         return add_cors(JsonResponse({"ok": True, "data": order}, status=200))
 
@@ -117,6 +115,7 @@ def order_status(request, oid: int):
         if new_status not in ORDER_STATUSES:
             return add_cors(JsonResponse({"error": f"Invalid status {new_status}"}, status=400))
         order["status"] = new_status
+        order.setdefault("history", []).append({"status": order["status"], "at": now().isoformat()})
         order["status_changed_at"] = now().isoformat()
         return add_cors(JsonResponse({"ok": True, "data": order}, status=200))
 
@@ -128,7 +127,7 @@ urlpatterns = [
     path("api/health/", health),
 
     path("api/orders/", orders),
-    path("api/orders/<int:oid>/status/", order_status),  # << nouveau
+    path("api/orders/<int:oid>/status/", order_status),
 
     path("api/clients/", clients),
     path("api/partners/", partners),
@@ -136,4 +135,4 @@ urlpatterns = [
     path("api/incidents/", incidents),
 
     path("favicon.ico", favicon),
-]
+    ]
