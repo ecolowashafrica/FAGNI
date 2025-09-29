@@ -1,88 +1,63 @@
 from django.urls import path
-from django.http import HttpResponse, JsonResponse
-from django.utils.timezone import now
-from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 import json
 
-# ===== Stockage en mémoire (reset à chaque redeploy) =====
-ORDERS = []
-CLIENTS = []
-PARTNERS = []
-PAYMENTS = []
-INCIDENTS = []
-
-NEXT_ID = {
-    "order": 1,
-    "client": 1,
-    "partner": 1,
-    "payment": 1,
-    "incident": 1,
-}
-
-# ===== Utilitaires =====
-def add_cors(resp):
-    resp["Access-Control-Allow-Origin"] = "*"
-    resp["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    resp["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    return resp
-
-def parse_json(request):
-    try:
-        body = request.body.decode("utf-8") if request.body else "{}"
-        return json.loads(body)
-    except Exception:
-        return None
+# stockage en mémoire
+ORDERS, CLIENTS, PARTNERS, PAYMENTS, INCIDENTS = [], [], [], [], []
 
 def home(request):
-    return add_cors(HttpResponse("FAGNI API – OK", status=200))
+    return JsonResponse({"message": "FAGNI backend actif"})
 
-def health(request):
-    return add_cors(JsonResponse({"ok": True, "time": now().isoformat()}))
+# ---- CLIENTS ----
+def clients(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        data["id"] = len(CLIENTS) + 1
+        CLIENTS.append(data)
+        return JsonResponse({"success": True, "client": data})
+    return JsonResponse({"data": CLIENTS})
 
-def favicon(_):
-    return add_cors(HttpResponse(status=204))
+# ---- ORDERS ----
+def orders(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        data["id"] = len(ORDERS) + 1
+        ORDERS.append(data)
+        return JsonResponse({"success": True, "order": data})
+    return JsonResponse({"data": ORDERS})
 
-# ===== Handlers génériques (GET liste / POST création) =====
-def make_list_handler(store_key, store):
-    @csrf_exempt
-    def handler(request):
-        if request.method == "OPTIONS":
-            return add_cors(HttpResponse(status=204))
+# ---- PARTNERS ----
+def partners(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        data["id"] = len(PARTNERS) + 1
+        PARTNERS.append(data)
+        return JsonResponse({"success": True, "partner": data})
+    return JsonResponse({"data": PARTNERS})
 
-        if request.method == "GET":
-            return add_cors(JsonResponse({"ok": True, "data": store}, safe=False))
+# ---- PAYMENTS ----
+def payments(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        data["id"] = len(PAYMENTS) + 1
+        PAYMENTS.append(data)
+        return JsonResponse({"success": True, "payment": data})
+    return JsonResponse({"data": PAYMENTS})
 
-        if request.method == "POST":
-            payload = parse_json(request)
-            if payload is None:
-                return add_cors(JsonResponse({"error": "Invalid JSON"}, status=400))
-            # assigne un ID
-            payload["id"] = NEXT_ID[store_key]
-            NEXT_ID[store_key] += 1
-            # timestamp simple
-            payload.setdefault("created_at", now().isoformat())
-            store.append(payload)
-            return add_cors(JsonResponse({"ok": True, "data": payload}, status=201))
+# ---- INCIDENTS ----
+def incidents(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        data["id"] = len(INCIDENTS) + 1
+        INCIDENTS.append(data)
+        return JsonResponse({"success": True, "incident": data})
+    return JsonResponse({"data": INCIDENTS})
 
-        return add_cors(JsonResponse({"error": "Method not allowed"}, status=405))
-    return handler
-
-orders = make_list_handler("order", ORDERS)
-clients = make_list_handler("client", CLIENTS)
-partners = make_list_handler("partner", PARTNERS)
-payments = make_list_handler("payment", PAYMENTS)
-incidents = make_list_handler("incident", INCIDENTS)
-
-# ===== Routes =====
 urlpatterns = [
     path("", home),
-    path("api/health/", health),
-
-    path("api/orders/", orders),
     path("api/clients/", clients),
+    path("api/orders/", orders),
     path("api/partners/", partners),
     path("api/payments/", payments),
     path("api/incidents/", incidents),
-
-    path("favicon.ico", favicon),
 ]
