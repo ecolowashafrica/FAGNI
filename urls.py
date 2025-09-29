@@ -1,18 +1,12 @@
-from django.urls import path
 from django.http import HttpResponse
-from django.utils.timezone import now
+from django.urls import path
 
-def home(request):
-    return HttpResponse("FAGNI API – OK", status=200)
-
-def health(request):
-    return HttpResponse(
-        f'{{"ok": true, "time": "{now().isoformat()}"}}',
-        content_type="application/json",
-        status=200,
-    )
+def favicon(_):
+    # Réponse vide (no content) pour éviter un 404
+    return HttpResponse(status=204)
 
 urlpatterns = [
-    path("", home),              # ← / renvoie 200 au lieu de 404
+    path("", home),                # si tu as déjà une page d'accueil
     path("api/health/", health),
+    path("favicon.ico", favicon),  # ← évite le 404
 ]
