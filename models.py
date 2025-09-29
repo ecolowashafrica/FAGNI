@@ -48,4 +48,15 @@ class Payment(models.Model):
     method = models.CharField(max_length=30)   # momo, card, cash...
     amount = models.IntegerField()
     currency = models.CharField(max_length=10, default="XOF")
-    status = models.Char
+    status = models.CharField(max_length=30, default="paid")
+    reference = models.CharField(max_length=80, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self): return f"Payment #{self.pk} - {self.amount} {self.currency}"
+
+class Incident(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="incidents")
+    type = models.CharField(max_length=60)
+    severity = models.CharField(max_length=30, default="medium")
+    description = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self): return f"Incident #{self.pk} - {self.type}"
