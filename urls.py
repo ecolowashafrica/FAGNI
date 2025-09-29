@@ -1,10 +1,18 @@
 from django.urls import path
-from django.http import JsonResponse
+from django.http import HttpResponse
 from django.utils.timezone import now
 
+def home(request):
+    return HttpResponse("FAGNI API – OK", status=200)
+
 def health(request):
-    return JsonResponse({'ok': True, 'time': now().isoformat()})
+    return HttpResponse(
+        f'{{"ok": true, "time": "{now().isoformat()}"}}',
+        content_type="application/json",
+        status=200,
+    )
 
 urlpatterns = [
-    path('api/health/', health),
+    path("", home),              # ← corrige le 404 sur /
+    path("api/health/", health),
 ]
