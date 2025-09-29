@@ -13,6 +13,6 @@ def health(request):
     )
 
 urlpatterns = [
-    path("", home),              # ← corrige le 404 sur /
+    path("", home),              # ← / renvoie 200 au lieu de 404
     path("api/health/", health),
 ]
