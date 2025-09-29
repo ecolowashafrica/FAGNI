@@ -4,60 +4,85 @@ from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-# Stockage temporaire en mémoire (reset à chaque redéploiement)
+# ===== Stockage en mémoire (reset à chaque redeploy) =====
 ORDERS = []
-NEXT_ID = 1
+CLIENTS = []
+PARTNERS = []
+PAYMENTS = []
+INCIDENTS = []
 
-# Ajout des en-têtes CORS
+NEXT_ID = {
+    "order": 1,
+    "client": 1,
+    "partner": 1,
+    "payment": 1,
+    "incident": 1,
+}
+
+# ===== Utilitaires =====
 def add_cors(resp):
     resp["Access-Control-Allow-Origin"] = "*"
     resp["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     resp["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     return resp
 
-# Page d’accueil
+def parse_json(request):
+    try:
+        body = request.body.decode("utf-8") if request.body else "{}"
+        return json.loads(body)
+    except Exception:
+        return None
+
 def home(request):
     return add_cors(HttpResponse("FAGNI API – OK", status=200))
 
-# Health check
 def health(request):
     return add_cors(JsonResponse({"ok": True, "time": now().isoformat()}))
 
-# Favicon (évite les erreurs 404)
 def favicon(_):
     return add_cors(HttpResponse(status=204))
 
-# Endpoint commandes
-@csrf_exempt
-def orders(request):
-    global NEXT_ID
-    if request.method == "OPTIONS":
-        return add_cors(HttpResponse(status=204))
+# ===== Handlers génériques (GET liste / POST création) =====
+def make_list_handler(store_key, store):
+    @csrf_exempt
+    def handler(request):
+        if request.method == "OPTIONS":
+            return add_cors(HttpResponse(status=204))
 
-    if request.method == "GET":
-        # Retourner la liste des commandes
-        return add_cors(JsonResponse({"ok": True, "orders": ORDERS}, safe=False))
+        if request.method == "GET":
+            return add_cors(JsonResponse({"ok": True, "data": store}, safe=False))
 
-    if request.method == "POST":
-        try:
-            body = request.body.decode("utf-8") if request.body else "{}"
-            data = json.loads(body)
-        except Exception:
-            return add_cors(JsonResponse({"error": "Invalid JSON"}, status=400))
+        if request.method == "POST":
+            payload = parse_json(request)
+            if payload is None:
+                return add_cors(JsonResponse({"error": "Invalid JSON"}, status=400))
+            # assigne un ID
+            payload["id"] = NEXT_ID[store_key]
+            NEXT_ID[store_key] += 1
+            # timestamp simple
+            payload.setdefault("created_at", now().isoformat())
+            store.append(payload)
+            return add_cors(JsonResponse({"ok": True, "data": payload}, status=201))
 
-        # Générer un nouvel ID et stocker
-        data["id"] = NEXT_ID
-        NEXT_ID += 1
-        ORDERS.append(data)
+        return add_cors(JsonResponse({"error": "Method not allowed"}, status=405))
+    return handler
 
-        return add_cors(JsonResponse({"ok": True, "order": data}, status=201))
+orders = make_list_handler("order", ORDERS)
+clients = make_list_handler("client", CLIENTS)
+partners = make_list_handler("partner", PARTNERS)
+payments = make_list_handler("payment", PAYMENTS)
+incidents = make_list_handler("incident", INCIDENTS)
 
-    return add_cors(JsonResponse({"error": "Method not allowed"}, status=405))
-
-# Routes
+# ===== Routes =====
 urlpatterns = [
     path("", home),
     path("api/health/", health),
+
     path("api/orders/", orders),
+    path("api/clients/", clients),
+    path("api/partners/", partners),
+    path("api/payments/", payments),
+    path("api/incidents/", incidents),
+
     path("favicon.ico", favicon),
 ]
