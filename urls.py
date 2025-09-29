@@ -4,34 +4,43 @@ from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 import json
 
+# Ajout des en-têtes CORS
+def add_cors(resp):
+    resp["Access-Control-Allow-Origin"] = "*"
+    resp["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    resp["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return resp
+
 # Page d’accueil
 def home(request):
-    return HttpResponse("FAGNI API – OK", status=200)
+    return add_cors(HttpResponse("FAGNI API – OK", status=200))
 
 # Health check
 def health(request):
-    return JsonResponse({"ok": True, "time": now().isoformat()})
+    return add_cors(JsonResponse({"ok": True, "time": now().isoformat()}))
 
-# Favicon (évite l’erreur 404)
+# Favicon (évite les erreurs 404)
 def favicon(_):
-    return HttpResponse(status=204)
+    return add_cors(HttpResponse(status=204))
 
-# 👇 Nouvelle route pour simuler une commande
+# Endpoint commandes
 @csrf_exempt
 def create_order(request):
+    if request.method == "OPTIONS":
+        return add_cors(HttpResponse(status=204))
     if request.method != "POST":
-        return JsonResponse({"error": "POST only"}, status=405)
+        return add_cors(JsonResponse({"error": "POST only"}, status=405))
     try:
-        data = json.loads(request.body or "{}")
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-    # Pour l’instant, pas de base → on simule un ID
-    return JsonResponse({"ok": True, "id": 1, "received": data}, status=201)
+        body = request.body.decode("utf-8") if request.body else "{}"
+        data = json.loads(body)
+    except Exception:
+        return add_cors(JsonResponse({"error": "Invalid JSON"}, status=400))
+    return add_cors(JsonResponse({"ok": True, "id": 1, "received": data}, status=201))
 
-# Liste des routes
+# Routes
 urlpatterns = [
-    path("", home),                     # /
-    path("api/health/", health),        # /api/health/
-    path("api/orders/", create_order),  # /api/orders/
-    path("favicon.ico", favicon),       # /favicon.ico
+    path("", home),
+    path("api/health/", health),
+    path("api/orders/", create_order),
+    path("favicon.ico", favicon),
 ]
