@@ -8,9 +8,7 @@ class Client(models.Model):
     address = models.CharField(max_length=255, blank=True, null=True)
     preferred_slot = models.CharField(max_length=50, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.full_name} ({self.phone})"
+    def __str__(self): return f"{self.full_name} ({self.phone})"
 
 class Partner(models.Model):
     TYPE_CHOICES = [("blanchisserie","Blanchisserie"),("couture","Couture"),("cordonnerie","Cordonnerie")]
@@ -20,9 +18,7 @@ class Partner(models.Model):
     zones = models.JSONField(default=list, blank=True)
     commission_rate = models.DecimalField(max_digits=4, decimal_places=2, default=0.18)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
+    def __str__(self): return self.name
 
 class Order(models.Model):
     STATUS = [
@@ -34,7 +30,7 @@ class Order(models.Model):
         ("DELIVERING","DELIVERING"),
         ("DELIVERED","DELIVERED"),
     ]
-    name = models.CharField(max_length=150)           # nom client (quick)
+    name = models.CharField(max_length=150)
     phone = models.CharField(max_length=40)
     client = models.ForeignKey(Client, null=True, blank=True, on_delete=models.SET_NULL)
     items = models.JSONField(default=list, blank=True)  # [{label, qty, price}]
@@ -45,28 +41,11 @@ class Order(models.Model):
     pickup_at = models.DateTimeField(null=True, blank=True)
     delivery_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Order #{self.pk} - {self.name}"
+    def __str__(self): return f"Order #{self.pk} - {self.name}"
 
 class Payment(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="payments")
     method = models.CharField(max_length=30)   # momo, card, cash...
     amount = models.IntegerField()
     currency = models.CharField(max_length=10, default="XOF")
-    status = models.CharField(max_length=30, default="paid")
-    reference = models.CharField(max_length=80, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Payment #{self.pk} - {self.amount} {self.currency}"
-
-class Incident(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="incidents")
-    type = models.CharField(max_length=60)
-    severity = models.CharField(max_length=30, default="medium")
-    description = models.CharField(max_length=255, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Incident #{self.pk} - {self.type}"
+    status = models.Char
